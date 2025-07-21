@@ -18,13 +18,13 @@ jobs:
     - name: 设置Python环境
       uses: actions/setup-python@v4
       with:
-        python-version: '3.8'
+        python-version: '3.9'
         
     - name: 安装依赖
       run: |
         python -m pip install --upgrade pip
         pip install -r parser_proxy_1/requirements.txt
-        pip install requests lxml fake-useragent pandas matplotlib
+        pip install requests lxml fake-useragent==1.4.0 pandas matplotlib
         
     - name: 运行代理池更新
       env:
