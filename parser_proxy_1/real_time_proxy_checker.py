@@ -180,11 +180,6 @@ class RealTimeProxyChecker:
 
 def main():
     print("=== 实时代理检查器 ===")
-    print("1. 检查现有代理列表")
-    print("2. 获取并检查新代理")
-    print("3. 持续模式（不断获取新代理并检查）")
-    
-    choice = input("请选择模式 (1/2/3): ").strip()
     
     # 获取token
     token = ""
@@ -194,6 +189,26 @@ def main():
         token = os.getenv('GITHUB_TOKEN', "")
     
     checker = RealTimeProxyChecker(token)
+    
+    # 检查是否在CI/CD环境中（非交互式）
+    import sys
+    if not sys.stdin.isatty():
+        # 非交互环境，直接运行获取新代理并检查
+        print("检测到非交互环境，自动运行代理获取和检查...")
+        fresh_proxies = checker.get_fresh_proxies()
+        if fresh_proxies:
+            checker.check_proxies_batch(fresh_proxies)
+            print(f"成功检查了 {len(checker.valid_proxies)} 个有效代理")
+        else:
+            print("未获取到新代理")
+        return
+    
+    # 交互式环境
+    print("1. 检查现有代理列表")
+    print("2. 获取并检查新代理")
+    print("3. 持续模式（不断获取新代理并检查）")
+    
+    choice = input("请选择模式 (1/2/3): ").strip()
     
     if choice == "1":
         # 检查现有代理
