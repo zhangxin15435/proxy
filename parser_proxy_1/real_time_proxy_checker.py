@@ -60,6 +60,7 @@ class RealTimeProxyChecker:
         """获取新的代理（从各个代理网站抓取）"""
         self.print_status("正在从各个代理网站获取新代理...")
         fresh_proxies = []
+        proxy_set = set()  # 使用set进行去重，提高效率
         
         # 获取新代理的函数列表
         proxy_functions = [
@@ -84,14 +85,18 @@ class RealTimeProxyChecker:
             try:
                 func_name = func.__name__
                 self.print_status(f"正在获取 {func_name} 的代理...")
+                count_before = len(proxy_set)
                 for proxy in func():
-                    if proxy and proxy not in fresh_proxies:
+                    if proxy and proxy not in proxy_set:
+                        proxy_set.add(proxy)
                         fresh_proxies.append(proxy)
                         self.print_status(f"发现新代理: {proxy}")
+                count_after = len(proxy_set)
+                self.print_status(f"{func_name} 获取到 {count_after - count_before} 个新代理")
             except Exception as e:
                 self.print_status(f"获取 {func.__name__} 代理时出错: {e}")
                 
-        self.print_status(f"共获取到 {len(fresh_proxies)} 个新代理")
+        self.print_status(f"去重后共获取到 {len(fresh_proxies)} 个新代理")
         return fresh_proxies
     
     def check_single_proxy(self, proxy):
@@ -130,9 +135,10 @@ class RealTimeProxyChecker:
         self.valid_proxies = []
         self.start_time = time.time()
         
-        # 清空之前的结果文件
+        # 清空之前的结果文件（旧代理清理机制）
+        self.print_status("清理旧代理数据...")
         with open("valid_proxies.txt", "w", encoding="utf-8") as f:
-            f.write("")
+            f.write("")  # 清空文件，移除所有旧代理
             
         self.print_status(f"开始检查 {self.total_count} 个代理，使用 {max_workers} 个线程...")
         
