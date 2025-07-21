@@ -58,7 +58,9 @@ jobs:
         - 成功率: 100%
         '''
             
-            with open('../data/latest_report.md', 'w') as f:
+            # 确保data目录存在
+            os.makedirs('../data', exist_ok=True)
+            with open('../data/latest_report.md', 'w', encoding='utf-8') as f:
                 f.write(report)
         "
         
