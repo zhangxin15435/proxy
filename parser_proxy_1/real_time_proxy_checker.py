@@ -62,6 +62,20 @@ class RealTimeProxyChecker:
         fresh_proxies = []
         proxy_set = set()  # 使用set进行去重，提高效率
         
+        # 首先尝试从GitHub获取历史代理数据
+        try:
+            if self.token:
+                self.print_status("正在从GitHub获取历史代理数据...")
+                con = github_api.get_content("parserpp", "ip_ports", "/proxyinfo.txt", self.token)
+                github_proxies = [proxy.strip() for proxy in con.split("\n") if proxy.strip()]
+                for proxy in github_proxies:
+                    if proxy and proxy not in proxy_set:
+                        proxy_set.add(proxy)
+                        fresh_proxies.append(proxy)
+                self.print_status(f"从GitHub获取到 {len(github_proxies)} 个历史代理")
+        except Exception as e:
+            self.print_status(f"从GitHub获取历史代理失败: {e}")
+        
         # 获取新代理的函数列表
         proxy_functions = [
             proxyFetcher.freeProxy01,
@@ -101,19 +115,30 @@ class RealTimeProxyChecker:
     
     def check_single_proxy(self, proxy):
         """检查单个代理"""
+        start_check_time = time.time()
         try:
             if check_proxy(proxy):
+                response_time = time.time() - start_check_time
                 self.valid_proxies.append(proxy)
-                self.print_status(f"✅ 可用代理: {proxy}")
-                # 实时保存可用代理到文件
+                self.print_status(f"✅ 可用代理: {proxy} (响应时间: {response_time:.2f}s)")
+                
+                # 实时保存可用代理到文件，包含质量评分
                 with open("valid_proxies.txt", "a", encoding="utf-8") as f:
                     f.write(f"{proxy}\n")
+                
+                # 保存详细质量信息到单独文件
+                quality_score = self._calculate_quality_score(response_time)
+                with open("proxy_quality.txt", "a", encoding="utf-8") as f:
+                    f.write(f"{proxy},{response_time:.2f},{quality_score}\n")
+                    
                 return True
             else:
-                self.print_status(f"❌ 无效代理: {proxy}")
+                response_time = time.time() - start_check_time
+                self.print_status(f"❌ 无效代理: {proxy} (响应时间: {response_time:.2f}s)")
                 return False
         except Exception as e:
-            self.print_status(f"❌ 检查代理 {proxy} 时出错: {e}")
+            response_time = time.time() - start_check_time
+            self.print_status(f"❌ 检查代理 {proxy} 时出错: {e} (耗时: {response_time:.2f}s)")
             return False
         finally:
             self.checked_count += 1
@@ -128,6 +153,19 @@ class RealTimeProxyChecker:
                                f"可用: {len(self.valid_proxies)} | "
                                f"预计剩余: {remaining/60:.1f}分钟")
     
+    def _calculate_quality_score(self, response_time):
+        """计算代理质量评分 (0-100)"""
+        if response_time <= 1.0:
+            return 100
+        elif response_time <= 2.0:
+            return 90
+        elif response_time <= 3.0:
+            return 80
+        elif response_time <= 5.0:
+            return 70
+        else:
+            return 60
+    
     def check_proxies_batch(self, proxy_list, max_workers=50):
         """批量检查代理"""
         self.total_count = len(proxy_list)
@@ -139,6 +177,10 @@ class RealTimeProxyChecker:
         self.print_status("清理旧代理数据...")
         with open("valid_proxies.txt", "w", encoding="utf-8") as f:
             f.write("")  # 清空文件，移除所有旧代理
+        
+        # 清空质量评分文件
+        with open("proxy_quality.txt", "w", encoding="utf-8") as f:
+            f.write("proxy,response_time,quality_score\n")  # CSV头部
             
         self.print_status(f"开始检查 {self.total_count} 个代理，使用 {max_workers} 个线程...")
         
