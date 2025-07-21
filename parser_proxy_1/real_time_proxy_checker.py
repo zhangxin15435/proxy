@@ -191,7 +191,6 @@ def main():
     checker = RealTimeProxyChecker(token)
     
     # 检查是否在CI/CD环境中（非交互式）
-    import sys
     if not sys.stdin.isatty():
         # 非交互环境，直接运行获取新代理并检查
         print("检测到非交互环境，自动运行代理获取和检查...")
