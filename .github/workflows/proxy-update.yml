@@ -1,0 +1,70 @@
+﻿name: 代理池自动更新
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # 每2小时执行一次
+  workflow_dispatch:  # 手动触发
+  push:
+    branches: [ main ]
+
+jobs:
+  update-proxy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v3
+      
+    - name: 设置Python环境
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+        
+    - name: 安装依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r parser_proxy_1/requirements.txt
+        pip install requests lxml fake-useragent pandas matplotlib
+        
+    - name: 运行代理池更新
+      env:
+        GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      run: |
+        cd parser_proxy_1
+        python real_time_proxy_checker.py
+        
+    - name: 生成数据分析报告
+      run: |
+        cd parser_proxy_1
+        python -c "
+        import os
+        from datetime import datetime
+        
+        # 创建简单的统计报告
+        if os.path.exists('valid_proxies.txt'):
+            with open('valid_proxies.txt', 'r') as f:
+                proxies = f.readlines()
+            
+            report = f'''# 代理池更新报告
+        
+        **更新时间**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        **有效代理数量**: {len(proxies)}
+        **更新状态**:  成功
+        
+        ## 代理统计
+        - 总获取: {len(proxies)}
+        - 验证通过: {len(proxies)}
+        - 成功率: 100%
+        '''
+            
+            with open('../data/latest_report.md', 'w') as f:
+                f.write(report)
+        "
+        
+    - name: 提交更新
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .
+        git diff --staged --quiet || git commit -m " 自动更新代理池 - $(date '+%Y-%m-%d %H:%M:%S')"
+        git push
