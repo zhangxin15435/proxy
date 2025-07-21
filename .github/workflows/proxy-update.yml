@@ -29,6 +29,7 @@ jobs:
     - name: 运行代理池更新
       env:
         GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+        PYTHONUNBUFFERED: 1
       run: |
         cd parser_proxy_1
         python real_time_proxy_checker.py

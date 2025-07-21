@@ -23,7 +23,7 @@ class RealTimeProxyChecker:
     def print_status(self, message):
         """打印带时间戳的状态信息"""
         current_time = datetime.now().strftime("%H:%M:%S")
-        print(f"[{current_time}] {message}")
+        print(f"[{current_time}] {message}", flush=True)
         
     def get_proxy_list(self):
         """获取代理列表"""
@@ -179,7 +179,7 @@ class RealTimeProxyChecker:
                 time.sleep(60)  # 出错后等待1分钟
 
 def main():
-    print("=== 实时代理检查器 ===")
+    print("=== 实时代理检查器 ===", flush=True)
     
     # 获取token
     token = ""
@@ -193,13 +193,13 @@ def main():
     # 检查是否在CI/CD环境中（非交互式）
     if not sys.stdin.isatty():
         # 非交互环境，直接运行获取新代理并检查
-        print("检测到非交互环境，自动运行代理获取和检查...")
+        print("检测到非交互环境，自动运行代理获取和检查...", flush=True)
         fresh_proxies = checker.get_fresh_proxies()
         if fresh_proxies:
             checker.check_proxies_batch(fresh_proxies)
-            print(f"成功检查了 {len(checker.valid_proxies)} 个有效代理")
+            print(f"成功检查了 {len(checker.valid_proxies)} 个有效代理", flush=True)
         else:
-            print("未获取到新代理")
+            print("未获取到新代理", flush=True)
         return
     
     # 交互式环境
