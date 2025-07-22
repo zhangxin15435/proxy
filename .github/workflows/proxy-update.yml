@@ -65,9 +65,12 @@ jobs:
         "
         
     - name: 提交更新
+      env:
+        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
+        git remote set-url origin https://zhangxin15435:${ACCESS_TOKEN}@github.com/zhangxin15435/proxy.git
         git add .
-        git diff --staged --quiet || git commit -m " 自动更新代理池 - $(date '+%Y-%m-%d %H:%M:%S')"
+        git diff --staged --quiet || git commit -m "自动更新代理池 - $(date '+%Y-%m-%d %H:%M:%S')"
         git push
