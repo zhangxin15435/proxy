@@ -7,6 +7,11 @@ on:
   push:
     branches: [ main ]
 
+# 添加权限设置
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   update-proxy:
     runs-on: ubuntu-latest
@@ -14,6 +19,8 @@ jobs:
     steps:
     - name: 检出代码
       uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.ACCESS_TOKEN }}
       
     - name: 设置Python环境
       uses: actions/setup-python@v4
@@ -65,12 +72,13 @@ jobs:
         "
         
     - name: 提交更新
-      env:
-        ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git remote set-url origin https://zhangxin15435:${ACCESS_TOKEN}@github.com/zhangxin15435/proxy.git
         git add .
-        git diff --staged --quiet || git commit -m "自动更新代理池 - $(date '+%Y-%m-%d %H:%M:%S')"
-        git push
+        if git diff --staged --quiet; then
+          echo "没有文件变更，跳过提交"
+        else
+          git commit -m "自动更新代理池 - $(date '+%Y-%m-%d %H:%M:%S')"
+          git push
+        fi
